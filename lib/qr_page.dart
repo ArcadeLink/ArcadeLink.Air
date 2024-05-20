@@ -1,11 +1,52 @@
+import 'dart:async';
+import 'package:aircade/services/user_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-class QrPage extends StatelessWidget {
-  final String qrData;
-  final int remainingTime;
+import 'package:otp/otp.dart';
+
+class QrPage extends StatefulWidget {
   final int totalTime = 30;
 
-  const QrPage({Key? key, required this.qrData, required this.remainingTime}) : super(key: key);
+  const QrPage({Key? key}) : super(key: key);
+
+  @override
+  _QrPageState createState() => _QrPageState();
+}
+
+class _QrPageState extends State<QrPage> {
+  late Timer _timer;
+  final ValueNotifier<String> _otp = ValueNotifier<String>('');
+  final ValueNotifier<int> _remainingTime = ValueNotifier<int>(30);
+  String? _secret;
+
+  @override
+  void initState() {
+    super.initState();
+    _getSecret();
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_remainingTime.value <= 0) {
+        _remainingTime.value = widget.totalTime;
+        if (_secret != null) {
+          _otp.value = OTP.generateTOTPCodeString(_secret!, DateTime.now().toUtc().millisecondsSinceEpoch, length: 8);
+        }
+      } else {
+        _remainingTime.value--;
+      }
+    });
+  }
+
+  Future<void> _getSecret() async {
+    final userService = Provider.of<UserService>(context, listen: false);
+    final user = await userService.getUserInfo();
+    _secret = user['secret'];
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,21 +67,36 @@ class QrPage extends StatelessWidget {
                   children: [
                     Padding(
                       padding: const EdgeInsets.all(32.0),
-                      child: Container(
-                        color: Colors.white,
-                        child: QrImageView(data: qrData, size: 180, padding: const EdgeInsets.all(15)),
+                      child: ValueListenableBuilder<String>(
+                        valueListenable: _otp,
+                        builder: (context, otp, child) {
+                          return Container(
+                            color: Colors.white,
+                            child: QrImageView(data: otp, size: 180, padding: const EdgeInsets.all(15)),
+                          );
+                        },
                       ),
                     ),
                   ],
                 ),
-                Text("剩余 $remainingTime 秒"),
+                ValueListenableBuilder<int>(
+                  valueListenable: _remainingTime,
+                  builder: (context, remainingTime, child) {
+                    return Text("剩余 $remainingTime 秒");
+                  },
+                ),
                 const SizedBox(
                   height: 20,
                 ),
-                LinearProgressIndicator(
-                  value: remainingTime / totalTime,
-                  color: Theme.of(context).progressIndicatorTheme.color,
-                  backgroundColor: Colors.grey[200],
+                ValueListenableBuilder<int>(
+                  valueListenable: _remainingTime,
+                  builder: (context, remainingTime, child) {
+                    return LinearProgressIndicator(
+                      value: remainingTime / widget.totalTime,
+                      color: Theme.of(context).progressIndicatorTheme.color,
+                      backgroundColor: Colors.grey[200],
+                    );
+                  },
                 ),
               ],
             ),

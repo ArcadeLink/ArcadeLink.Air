@@ -40,7 +40,7 @@ class NavigationPage extends StatefulWidget {
   const NavigationPage({super.key});
 
   final List<Widget> pages = const <Widget>[
-    QrPage(qrData: "test", remainingTime: 20),
+    QrPage(),
     VideoPage(),
     PersonalPage()
   ];
