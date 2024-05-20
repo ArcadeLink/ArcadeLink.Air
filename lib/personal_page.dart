@@ -1,27 +1,27 @@
+import 'package:aircade/services/user_service.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class PersonalPage extends StatelessWidget {
-  final String userName;
-  final String nickName;
-  final String registerTime;
-
-  const PersonalPage({Key? key, required this.userName, required this.nickName, required this.registerTime}) : super(key: key);
+  const PersonalPage({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final userService = Provider.of<UserService>(context);
+    final user = userService.getCurrentUser();
+
     return Padding(
       padding: const EdgeInsets.all(50.0),
       child: Column(
         children:[
-          UserNicknameHeadline(nickName: nickName),
+          UserNicknameHeadline(nickName: user['nickname']!),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
                 children:[
-                  UserInformation(informationName: "登录名", informationValue: userName),
-                  UserInformation(informationName: "昵称", informationValue: nickName),
-                  UserInformation(informationName: "注册时间", informationValue: registerTime),
+                  UserInformation(informationName: "登录名", informationValue: user['username']!),
+                  UserInformation(informationName: "昵称", informationValue: user['nickname']!),
                 ]
               ),
             ),

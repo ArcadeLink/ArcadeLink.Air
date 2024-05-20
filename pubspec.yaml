@@ -28,6 +28,8 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  shared_preferences: ^2.0.8
+  encrypt: ^5.0.1
   qr_flutter: ^4.0.0
   http: ^0.13.3
   flutter:

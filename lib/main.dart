@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:aircade/personal_page.dart';
 import 'package:aircade/qr_page.dart';
 import 'package:aircade/services/user_service.dart';
@@ -7,8 +5,22 @@ import 'package:aircade/video_page.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-void main() {
+import 'login_page.dart';
+
+Future<void> main() async {
   final userService = UserService(baseUrl: 'https://api.arcade-link.top');
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final credentials = await userService.getUserCredentials();
+  if (credentials != null) {
+    try {
+      await userService.loginUser(credentials['username']!, credentials['password']!);
+      print('Auto login successful');
+    } catch (e) {
+      print('Auto login failed: ${e.toString()}');
+    }
+  }
 
   runApp(
     Provider.value(
@@ -40,11 +52,7 @@ class NavigationPage extends StatefulWidget {
   final List<Widget> pages = const <Widget>[
     QrPage(qrData: "test", remainingTime: 20),
     VideoPage(),
-    PersonalPage(
-      userName: "test",
-      nickName: "tester",
-      registerTime: "1234-56-78",
-    )
+    PersonalPage()
   ];
 
   @override
@@ -56,6 +64,14 @@ class _NavigationPageState extends State<NavigationPage> {
 
   @override
   Widget build(BuildContext context) {
+
+    // 检查用户是否登录
+    final userService = Provider.of<UserService>(context);
+    if (!userService.isLoggedIn()) {
+      return const LoginPageAndRegisterPage();
+    }
+
+    // 如果用户已登录，则显示主页
     return Scaffold(
       body: currentIndex < widget.pages.length
           ? widget.pages[currentIndex]
