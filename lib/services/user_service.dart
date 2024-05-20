@@ -40,6 +40,7 @@ class UserService {
         if (DateTime.fromMillisecondsSinceEpoch(payloadMap['exp'] * 1000).isAfter(DateTime.now())) {
           _jwt = jwt;
           print("jwt is valid, saving... $_jwt ");
+          refreshJwt();
           return true;
         }
       } catch (e) {
@@ -82,6 +83,22 @@ class UserService {
     }
     headers['Content-Type'] = 'application/json';
     return headers;
+  }
+
+  Future<void> refreshJwt() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/user/jwt'),
+      headers: _addGeneralHeader({}),
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      _jwt = data["data"].toString();
+      print("jwt refreshed, saving... $_jwt");
+      saveJwt(_jwt!);
+    } else {
+      throw Exception('Failed to refresh jwt');
+    }
   }
 
 
