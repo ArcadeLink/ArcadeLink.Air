@@ -72,27 +72,30 @@ class _QrPageState extends State<QrPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(32.0),
-                      child: ValueListenableBuilder<String>(
-                        valueListenable: _otp,
-                        builder: (context, otp, child) {
-                          return otp == ''
-                              ? const CircularProgressIndicator()
-                              : Container(
-                                  color: Colors.white,
-                                  child: QrImageView(
-                                      data: otp,
-                                      size: 180,
-                                      padding: const EdgeInsets.all(15)),
-                                );
-                        },
-                      ),
+                const SizedBox(height: 20,),
+                FittedBox(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ValueListenableBuilder<String>(
+                          valueListenable: _otp,
+                          builder: (context, otp, child) {
+                            return otp == ''
+                                ? const CircularProgressIndicator()
+                                : Container(
+                                    color: Colors.white,
+                                    child: QrImageView(
+                                        data: otp,
+                                        size: 180,
+                                        padding: const EdgeInsets.all(15)),
+                                  );
+                          },
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
                 ValueListenableBuilder<int>(
                   valueListenable: _remainingTime,

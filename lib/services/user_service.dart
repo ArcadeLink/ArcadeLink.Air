@@ -87,7 +87,7 @@ class UserService {
 
   Future<void> refreshJwt() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/user/jwt'),
+      Uri.parse('$baseUrl/users/jwt'),
       headers: _addGeneralHeader({}),
     );
 

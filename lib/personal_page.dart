@@ -247,16 +247,16 @@ class UserOperation extends StatelessWidget {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
-        child: Row(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        child: Column(
           children: [
-            ElevatedButton(onPressed: () => _changePassword(context), child: const Text("修改密码")),
-            ElevatedButton(onPressed: () => _changeNickname(context), child: const Text("修改昵称")),
-            ElevatedButton(onPressed: () => _logout(context), child: const Text("退出登录")),
+            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => _changePassword(context), child: const Text("修改密码"))),
+            const SizedBox(height: 10,),
+            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => _changeNickname(context), child: const Text("修改昵称"))),
+            const SizedBox(height: 10,),
+            SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => _logout(context), child: const Text("退出登录"))),
           ],
         ),
-      ),
-    );
+        ),
+      );
   }
 }
