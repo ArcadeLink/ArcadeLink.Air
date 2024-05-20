@@ -12,16 +12,6 @@ Future<void> main() async {
 
   WidgetsFlutterBinding.ensureInitialized();
 
-  final credentials = await userService.getUserCredentials();
-  if (credentials != null) {
-    try {
-      await userService.loginUser(credentials['username']!, credentials['password']!);
-      print('Auto login successful');
-    } catch (e) {
-      print('Auto login failed: ${e.toString()}');
-    }
-  }
-
   runApp(
     Provider.value(
       value: userService,
@@ -63,42 +53,68 @@ class _NavigationPageState extends State<NavigationPage> {
   int currentIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    final userService = Provider.of<UserService>(context, listen: false);
+    userService.isLoggedIn.addListener(_refresh);
+  }
+
+  @override
+  void dispose() {
+    final userService = Provider.of<UserService>(context, listen: false);
+    userService.isLoggedIn.removeListener(_refresh);
+    super.dispose();
+  }
+
+  void _refresh() {
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-
-    // 检查用户是否登录
     final userService = Provider.of<UserService>(context);
-    if (!userService.isLoggedIn()) {
-      return const LoginPageAndRegisterPage();
-    }
-
-    // 如果用户已登录，则显示主页
-    return Scaffold(
-      body: currentIndex < widget.pages.length
-          ? widget.pages[currentIndex]
-          : const Placeholder(),
-      bottomNavigationBar: NavigationBar(
-        onDestinationSelected: (int index) {
-          setState(() {
-            currentIndex = index;
-          });
-        },
-        indicatorColor: Theme.of(context).colorScheme.inversePrimary,
-        selectedIndex: currentIndex,
-        destinations: const <Widget>[
-          NavigationDestination(
-            icon: Icon(Icons.qr_code),
-            label: '二维码',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.video_collection),
-            label: '视频',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person),
-            label: '个人',
-          ),
-        ],
-      ),
+    return FutureBuilder<bool>(
+      future: userService.isJwtValid(),
+      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator(); // 显示加载指示器
+        } else if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}'); // 显示错误信息
+        } else if (snapshot.data == false) {
+          print("jwt is invalid, showing login page...");
+          return const LoginPageAndRegisterPage(); // 如果 JWT 无效，显示登录页面
+        } else {
+          // 如果 JWT 有效，显示主页面
+          return Scaffold(
+            body: currentIndex < widget.pages.length
+                ? widget.pages[currentIndex]
+                : const Placeholder(),
+            bottomNavigationBar: NavigationBar(
+              onDestinationSelected: (int index) {
+                setState(() {
+                  currentIndex = index;
+                });
+              },
+              indicatorColor: Theme.of(context).colorScheme.inversePrimary,
+              selectedIndex: currentIndex,
+              destinations: const <Widget>[
+                NavigationDestination(
+                  icon: Icon(Icons.qr_code),
+                  label: '二维码',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.video_collection),
+                  label: '视频',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person),
+                  label: '个人',
+                ),
+              ],
+            ),
+          );
+        }
+      },
     );
   }
 }

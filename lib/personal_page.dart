@@ -8,6 +8,7 @@ class PersonalPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userService = Provider.of<UserService>(context);
+    userService.getUserInfo();
     final user = userService.getCurrentUser();
 
     return Padding(

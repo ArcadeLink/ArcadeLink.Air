@@ -1,7 +1,8 @@
 import 'dart:convert';
-import 'package:encrypt/encrypt.dart' as encrypt;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:jaguar_jwt/jaguar_jwt.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UserService {
   final String baseUrl;
@@ -12,29 +13,67 @@ class UserService {
 
   UserService({required this.baseUrl});
 
-  final encrypter = encrypt.Encrypter(encrypt.AES(encrypt.Key.fromUtf8('ZhangYong:ok_i_xTaskCreate')));
+  ValueNotifier<bool> isLoggedIn = ValueNotifier<bool>(false);
 
-  Future<void> saveUserCredentials(String username, String password) async {
-    final encryptedUsername = encrypter.encrypt(username).base64;
-    final encryptedPassword = encrypter.encrypt(password).base64;
-
+  Future<void> saveJwt(String jwt) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('username', encryptedUsername);
-    await prefs.setString('password', encryptedPassword);
+    await prefs.setString('jwt', jwt);
+    print("jwt saved: $jwt");
   }
 
-  Future<Map<String, String>?> getUserCredentials() async {
+  Future<String?> getJwt() async {
+    print("reading jwt...");
     final prefs = await SharedPreferences.getInstance();
-    final encryptedUsername = prefs.getString('username');
-    final encryptedPassword = prefs.getString('password');
+    return prefs.getString('jwt');
+  }
 
-    if (encryptedUsername != null && encryptedPassword != null) {
-      final username = encrypter.decrypt64(encryptedUsername);
-      final password = encrypter.decrypt64(encryptedPassword);
-      return {'username': username, 'password': password};
+  Future<bool> isJwtValid() async {
+    final jwt = await getJwt();
+    if (jwt != null) {
+      try {
+        final parts = jwt.split('.');
+        if (parts.length != 3) {
+          return false;
+        }
+        final payload = B64urlEncRfc7515.decodeUtf8(parts[1]);
+        final payloadMap = jsonDecode(payload);
+        if (DateTime.fromMillisecondsSinceEpoch(payloadMap['exp'] * 1000).isAfter(DateTime.now())) {
+          _jwt = jwt;
+          print("jwt is valid, saving... $_jwt ");
+          return true;
+        }
+      } catch (e) {
+        print("jwt expired or invalid: $e");
+        return false;
+      }
     }
+    print("jwt not found or expired");
+    return false;
+  }
 
-    return null;
+  Future<String> loginUser(String username, String password) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/users/login'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'username': username,
+        'password': password,
+      }),
+    );
+
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      _jwt = data["data"].toString();
+      _username = username;
+      print("login successful, saving jwt... $_jwt");
+      saveJwt(_jwt!);
+      isLoggedIn.value = true;
+      return data.toString();
+    } else {
+      print(response.body);
+      throw Exception('Failed to login');
+    }
   }
 
   Map<String, String> _addGeneralHeader(Map<String, String> headers) {
@@ -45,40 +84,12 @@ class UserService {
     return headers;
   }
 
-  bool isLoggedIn() {
-    return _jwt != null;
-  }
-
   Map<String, String?> getCurrentUser() {
     return {
       'username': _username,
       'nickname': _nickname,
       'secret': _secret,
     };
-  }
-
-  Future<String> loginUser(String username, String password) async {
-    // print("post to ${Uri.parse('$baseUrl/users/login')} with body: ${jsonEncode({'username': username, 'password': password})}");
-    final response = await http.post(
-      Uri.parse('$baseUrl/users/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'username': username,
-        'password': password,
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      _username = username;
-      _secret = data['secret'].toString();
-      _jwt = data.toString();
-      saveUserCredentials(username, password);
-      return data.toString();
-    } else {
-      print(response.body);
-      throw Exception('Failed to login');
-    }
   }
 
   Future<String> registerUser(String username, String password, String nickname) async {
@@ -112,13 +123,14 @@ class UserService {
     }
   }
 
-  Future<Map<String, dynamic>> getUserInfo(String userId) async {
+  Future<Map<String, dynamic>> getUserInfo() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/users/pref/$userId'),
+      Uri.parse('$baseUrl/users/pref/'),
       headers: _addGeneralHeader({}),
     );
 
     if (response.statusCode == 200) {
+
       return jsonDecode(response.body);
     } else {
       throw Exception('Failed to get user info');
