@@ -130,9 +130,9 @@ class RegisterPage extends StatelessWidget {
                   ElevatedButton(
                     onPressed: () async {
                       try {
-                        await userService.registerUserTemp();
-                        loginPage.setUsername('temp');
-                        loginPage.setPassword('temp');
+                        var userId = await userService.registerUserTemp();
+                        loginPage.setUsername(userId);
+                        loginPage.setPassword(userId);
                         pageController.previousPage(
                           duration: const Duration(milliseconds: 300),
                           curve: Curves.easeInOut,
@@ -166,12 +166,17 @@ class LoginPageAndRegisterPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final pageController = PageController();
-    return PageView(
-      controller: pageController,
-      children: <Widget>[
-        LoginPage(pageController: pageController),
-        RegisterPage(pageController: pageController,),
-      ],
+    return Provider<LoginPage>(
+      create: (_) => LoginPage(pageController: pageController),
+      child: PageView(
+        controller: pageController,
+        children: <Widget>[
+          Consumer<LoginPage>(
+            builder: (_, loginPage, __) => loginPage,
+          ),
+          RegisterPage(pageController: pageController,),
+        ],
+      ),
     );
   }
 }

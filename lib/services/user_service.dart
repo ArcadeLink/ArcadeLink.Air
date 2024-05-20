@@ -110,7 +110,7 @@ class UserService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data['userId'];
+      return data['data']['userId'].toString();
     } else {
       throw Exception('Failed to register temporary user');
     }
