@@ -84,13 +84,6 @@ class UserService {
     return headers;
   }
 
-  Map<String, String?> getCurrentUser() {
-    return {
-      'username': _username,
-      'nickname': _nickname,
-      'secret': _secret,
-    };
-  }
 
   Future<String> registerUser(String username, String password, String nickname) async {
     final response = await http.post(
@@ -130,33 +123,41 @@ class UserService {
     );
 
     if (response.statusCode == 200) {
-
-      return jsonDecode(response.body);
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+      if (responseData.containsKey('data')) {
+        _username = responseData['data']['user_id'];
+        _nickname = responseData['data']['nickname'];
+        _secret = responseData['data']['otp_secret'];
+        print("user info: $_username, $_nickname, $_secret");
+        return responseData['data'];
+      } else {
+        throw Exception('Failed to get user info: data field missing');
+      }
     } else {
       throw Exception('Failed to get user info');
     }
   }
 
-  Future<String> refreshSecret(String userId) async {
+  Future<String> refreshSecret() async {
     final response = await http.get(
-      Uri.parse('$baseUrl/users/secret/$userId'),
+      Uri.parse('$baseUrl/users/secret/'),
       headers: _addGeneralHeader({}),
     );
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      return data.toString();
+      return data["data"].toString();
     } else {
       throw Exception('Failed to refresh secret');
     }
   }
 
-  Future<bool> changeUsername(String userId, String newUsername) async {
+  Future<bool> changeUsername(String newUsername) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/users/nickname'),
       body: jsonEncode({
-        'userId': userId,
-        'newUsername': newUsername,
+        'userId': _username,
+        'nickname': newUsername,
       }),
       headers: _addGeneralHeader({}),
     );
@@ -164,11 +165,10 @@ class UserService {
     return response.statusCode == 200;
   }
 
-  Future<bool> changePassword(String userId, String oldPassword, String newPassword) async {
+  Future<bool> changePassword(String oldPassword, String newPassword) async {
     final response = await http.patch(
       Uri.parse('$baseUrl/users/password'),
       body: jsonEncode({
-        'userId': userId,
         'oldPassword': oldPassword,
         'newPassword': newPassword,
       }),
@@ -176,5 +176,12 @@ class UserService {
     );
 
     return response.statusCode == 200;
+  }
+
+  void logout() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('jwt');
+    _jwt = null;
+    isLoggedIn.value = false;
   }
 }

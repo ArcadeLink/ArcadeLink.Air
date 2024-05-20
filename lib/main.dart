@@ -73,48 +73,49 @@ class _NavigationPageState extends State<NavigationPage> {
   @override
   Widget build(BuildContext context) {
     final userService = Provider.of<UserService>(context);
-    return FutureBuilder<bool>(
-      future: userService.isJwtValid(),
-      builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const CircularProgressIndicator(); // 显示加载指示器
-        } else if (snapshot.hasError) {
-          return Text('Error: ${snapshot.error}'); // 显示错误信息
-        } else if (snapshot.data == false) {
-          print("jwt is invalid, showing login page...");
-          return const LoginPageAndRegisterPage(); // 如果 JWT 无效，显示登录页面
-        } else {
-          // 如果 JWT 有效，显示主页面
-          return Scaffold(
-            body: currentIndex < widget.pages.length
+    return Scaffold(
+      body: FutureBuilder<bool>(
+        future: userService.isJwtValid(),
+        builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator(); // 显示加载指示器
+          } else if (snapshot.hasError) {
+            return Text('Error: ${snapshot.error}'); // 显示错误信息
+          } else if (snapshot.data == false) {
+            print("jwt is invalid, showing login page...");
+            return const LoginPageAndRegisterPage(); // 如果 JWT 无效，显示登录页面
+          } else {
+            // 如果 JWT 有效，显示主页面
+            return currentIndex < widget.pages.length
                 ? widget.pages[currentIndex]
-                : const Placeholder(),
-            bottomNavigationBar: NavigationBar(
-              onDestinationSelected: (int index) {
-                setState(() {
-                  currentIndex = index;
-                });
-              },
-              indicatorColor: Theme.of(context).colorScheme.inversePrimary,
-              selectedIndex: currentIndex,
-              destinations: const <Widget>[
-                NavigationDestination(
-                  icon: Icon(Icons.qr_code),
-                  label: '二维码',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.video_collection),
-                  label: '视频',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.person),
-                  label: '个人',
-                ),
-              ],
-            ),
-          );
-        }
-      },
+                : const Placeholder();
+          }
+        },
+      ),
+      bottomNavigationBar: NavigationBar(
+        onDestinationSelected: (int index) {
+          setState(() {
+            currentIndex = index;
+          });
+        },
+        indicatorColor: Theme.of(context).colorScheme.inversePrimary,
+        selectedIndex: currentIndex,
+        destinations: const <Widget>[
+          NavigationDestination(
+            icon: Icon(Icons.qr_code),
+            label: '二维码',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.video_collection),
+            label: '视频',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person),
+            label: '个人',
+          ),
+        ],
+      ),
     );
   }
+
 }
